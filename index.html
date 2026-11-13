@@ -5,36 +5,54 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta name="theme-color" content="#0054A6">
 <link rel="manifest" href="manifest.json">
-<title>DeutschSwipe</title>
+<title>Fiszki</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:system-ui,sans-serif;background:#F5F5F5;color:#333;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 header{background:#0054A6;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
 header .stats{font-size:13px;opacity:.9}
-header button{background:none;border:0;color:#fff;font-size:22px}
+header button{background:none;border:0;color:#fff;font-size:22px;margin-left:6px}
 #stage{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;position:relative}
 #card{width:100%;max-width:460px;height:100%;max-height:560px;background:#fff;border-radius:20px;box-shadow:0 6px 24px #0003;padding:24px;display:flex;flex-direction:column;justify-content:center;overflow:auto;touch-action:none;user-select:none;position:relative}
 #card .label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#0054A6;margin-bottom:10px}
 #card .main{font-size:22px;font-weight:600;margin-bottom:18px;white-space:pre-line}
 #card .sub{font-size:16px;color:#555;white-space:pre-line}
 #card .hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:#aaa}
-#badge{position:absolute;top:20px;font-size:28px;font-weight:800;padding:4px 14px;border:4px solid;border-radius:10px;opacity:0;pointer-events:none}
+#card .topic{position:absolute;top:12px;left:16px;font-size:12px;color:#999}
+#card .del{position:absolute;top:8px;right:10px;background:none;border:0;font-size:20px;opacity:.6;padding:4px}
+#badge{position:absolute;top:40px;font-size:28px;font-weight:800;padding:4px 14px;border:4px solid;border-radius:10px;opacity:0;pointer-events:none}
 #msg{text-align:center;color:#666;padding:20px;line-height:1.6}
 #more{margin-top:16px;padding:12px 22px;border:0;border-radius:12px;background:#0054A6;color:#fff;font-size:16px}
 .btns{display:flex;gap:10px;padding:10px 16px 18px;justify-content:center}
 .btns button{flex:1;max-width:140px;padding:14px 0;border:0;border-radius:14px;font-size:16px;color:#fff}
 .no{background:#d9534f}.ok{background:#2e9e5b}.easy{background:#0054A6}
-dialog{border:0;border-radius:16px;padding:20px;width:min(92vw,420px)}
+dialog{border:0;border-radius:16px;padding:20px;width:min(94vw,460px);max-height:90dvh}
+dialog h3{margin-top:0}
 dialog label{display:block;margin:12px 0 4px;font-size:14px}
-dialog input,dialog select,dialog button{width:100%;padding:10px;font-size:16px;border-radius:8px;border:1px solid #ccc}
-dialog button{background:#0054A6;color:#fff;border:0;margin-top:12px}
+dialog input,dialog select,dialog textarea,dialog button{width:100%;padding:10px;font-size:16px;border-radius:8px;border:1px solid #ccc;font-family:inherit}
+dialog textarea{min-height:70px;resize:vertical}
+dialog button{background:#0054A6;color:#fff;border:0;margin-top:10px}
 dialog button.sec{background:#eee;color:#333}
+dialog button.danger{background:#d9534f}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips label{display:flex;align-items:center;gap:6px;margin:0;padding:6px 10px;background:#F5F5F5;border-radius:16px;font-size:14px}
+.chips input,.row input[type=checkbox]{width:auto;margin:0}
+.row{display:flex;align-items:center;gap:8px;margin-top:12px}
+.row label{margin:0}
+.small{font-size:13px;color:#555}
+#lst{height:90dvh}
+#lst[open]{display:flex;flex-direction:column}
+#lstItems{flex:1;overflow:auto;margin-top:10px;border-top:1px solid #eee}
+.item{padding:10px 4px;border-bottom:1px solid #eee}
+.item b{display:block}
+.item span{font-size:12px;color:#888}
+.two{display:flex;gap:8px}
 </style>
 </head>
 <body>
 <header>
   <div><b>Fiszki</b><div class="stats" id="stats"></div></div>
-  <button id="openSet">⚙️</button>
+  <div><button id="openList">📋</button><button id="openSet">⚙️</button></div>
 </header>
 <div id="stage"><div id="msg">Ładowanie…</div></div>
 <div class="btns">
@@ -43,27 +61,59 @@ dialog button.sec{background:#eee;color:#333}
   <button class="ok" id="bOk">✓ Umiem</button>
 </div>
 
+<!-- Ustawienia -->
 <dialog id="dlg">
-  <h3 style="margin-top:0">Ustawienia</h3>
+  <h3>Ustawienia</h3>
   <label>Kierunek</label>
   <select id="sDir">
     <option value="A">A: Bedeutung + Synonyme → Ausdruck + Beispiel</option>
     <option value="B">B: Ausdruck + Beispiel → Bedeutung + Synonyme</option>
   </select>
-  <label>Tydzień (Woche)</label>
-  <select id="sWeek"></select>
+  <label>Tematy / tygodnie (brak zaznaczenia = wszystkie)</label>
+  <div class="chips" id="sWeeks"></div>
+  <button id="bAllWeeks" class="sec">Wszystkie</button>
+  <div class="row"><input type="checkbox" id="sShuffle"><label for="sShuffle">Losowa kolejność</label></div>
   <label>Nowe fiszki dziennie</label>
   <input type="number" id="sNew" min="0">
   <label>Powtórki dziennie (0 = bez limitu)</label>
   <input type="number" id="sRev" min="0">
   <button id="bImport">📥 Importuj Excel (.xlsx)</button>
   <input type="file" id="file" accept=".xlsx,.xls" hidden>
-  <button id="bClose" class="sec">Zamknij</button>
-  <p id="impMsg" style="font-size:13px;color:#555"></p>
+  <div class="two">
+    <button id="bExp" class="sec">💾 Eksport kopii</button>
+    <button id="bImpB" class="sec">♻️ Import kopii</button>
+  </div>
+  <input type="file" id="fileB" accept=".json,application/json" hidden>
+  <button id="bClose">Zapisz i zamknij</button>
+  <p id="impMsg" class="small"></p>
+</dialog>
+
+<!-- Lista fiszek -->
+<dialog id="lst">
+  <h3>Wszystkie fiszki</h3>
+  <input type="search" id="lstQ" placeholder="Szukaj…">
+  <select id="lstW"></select>
+  <div class="small" id="lstCount"></div>
+  <div id="lstItems"></div>
+  <button id="lstClose" class="sec">Zamknij</button>
+</dialog>
+
+<!-- Edycja -->
+<dialog id="ed">
+  <h3 id="eTitle"></h3>
+  <label>Woche / temat</label><input id="eWeek">
+  <label>Bedeutung</label><textarea id="eMeaning"></textarea>
+  <label>Synonyme</label><textarea id="eSyn"></textarea>
+  <label>Beispiel</label><textarea id="eEx"></textarea>
+  <button id="eSave">Zapisz</button>
+  <button id="eDel" class="danger">🗑 Usuń fiszkę</button>
+  <button id="eCancel" class="sec">Anuluj</button>
 </dialog>
 
 <script src="xlsx.full.min.js"></script>
 <script>
+const $=id=>document.getElementById(id);
+
 /* ---------- Algorytm (styl Anki) ---------- */
 const DAY=864e5, RELEARN=10*60e3, MASTER_INT=180, STREAK_MASTER=5;
 const newP=()=>({state:'NEW',ease:2.5,interval:0,streak:0,lapses:0,due:0});
@@ -73,7 +123,7 @@ function answer(p,swipe,now=Date.now()){
   if(swipe==='up') return mastered(p,now);
   const streak=p.streak+1;
   if(streak>=STREAK_MASTER) return mastered({...p,streak},now);
-  const interval = streak===1?1 : streak===2?3 : Math.max(p.interval+1,Math.round(p.interval*p.ease));
+  const interval=streak===1?1:streak===2?3:Math.max(p.interval+1,Math.round(p.interval*p.ease));
   return {...p,state:'REVIEW',streak,interval,due:now+interval*DAY};
 }
 
@@ -84,9 +134,11 @@ const openDB=()=>new Promise((res,rej)=>{const q=indexedDB.open('fiszki',1);
   q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
 const getAll=()=>new Promise(r=>{const q=db.transaction('cards').objectStore('cards').getAll();q.onsuccess=()=>r(q.result)});
 const putMany=list=>new Promise(r=>{const t=db.transaction('cards','readwrite');const s=t.objectStore('cards');list.forEach(c=>s.put(c));t.oncomplete=r});
+const delOne=k=>new Promise(r=>{const t=db.transaction('cards','readwrite');t.objectStore('cards').delete(k);t.oncomplete=r});
 
 /* ---------- Ustawienia i liczniki dzienne ---------- */
-const S=Object.assign({dir:'A',week:'all',maxNew:10,maxRev:100},JSON.parse(localStorage.getItem('settings')||'{}'));
+const S=Object.assign({dir:'A',weeks:[],shuffle:true,maxNew:10,maxRev:100},JSON.parse(localStorage.getItem('settings')||'{}'));
+if('week' in S){S.weeks=S.week==='all'?[]:[String(S.week)];delete S.week}
 const saveS=()=>localStorage.setItem('settings',JSON.stringify(S));
 function daily(){
   const k=new Date().toDateString();
@@ -96,94 +148,101 @@ function daily(){
 }
 const saveD=d=>localStorage.setItem('daily',JSON.stringify(d));
 
+/* ---------- Pomocnicze ---------- */
+const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const isNum=w=>/^\d+$/.test(w);
+const weekCmp=(a,b)=>isNum(a)&&isNum(b)?a-b:isNum(a)?-1:isNum(b)?1:a.localeCompare(b,'de');
+const weekLabel=w=>w===''?'(bez tematu)':isNum(w)?'#'+w:w;
+const inF=c=>!S.weeks.length||S.weeks.includes(c.week);
+const byDue=(a,b)=>a.p[S.dir].due-b.p[S.dir].due;
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const ST={NEW:'nowa',LEARNING:'w nauce',REVIEW:'w nauce',MASTERED:'łatwa'};
+
 /* ---------- Kolejka ---------- */
-let cards=[], current=null;
+let cards=[], current=null, practice=false, queue=[];
 function pick(){
-  const now=Date.now(), d=daily();
-  const list=cards.filter(c=>S.week==='all'||String(c.week)===S.week);
+  const now=Date.now(), d=daily(), list=cards.filter(inF);
   const due=list.filter(c=>{const p=c.p[S.dir];return p.state!=='NEW'&&p.due<=now});
   const learn=due.filter(c=>c.p[S.dir].state==='LEARNING');
-  const rev=due.filter(c=>c.p[S.dir].state!=='LEARNING')
-    .sort((a,b)=>a.p[S.dir].due-b.p[S.dir].due).slice(0,S.maxRev===0?Infinity:Math.max(0,S.maxRev-d.r));
-  const cand=learn.concat(rev).sort((a,b)=>a.p[S.dir].due-b.p[S.dir].due);
+  const revLeft=S.maxRev===0?Infinity:Math.max(0,S.maxRev-d.r);
+  const rev=due.filter(c=>c.p[S.dir].state!=='LEARNING').sort(byDue).slice(0,revLeft);
+  const cand=learn.concat(rev);
   const newLeft=Math.max(0,S.maxNew-d.n);
-  const fresh=list.filter(c=>c.p[S.dir].state==='NEW').sort((a,b)=>a.week-b.week||a.added-b.added);
-  document.getElementById('stats').textContent=
-    `do powtórki: ${cand.length} · nowe: ${Math.min(newLeft,fresh.length)} · łącznie fiszek: ${list.length}`;
-  if(cand.length) return cand[0];
-  if(newLeft>0&&fresh.length) return fresh[0];
+  const fresh=list.filter(c=>c.p[S.dir].state==='NEW');
+  $('stats').textContent=`do powtórki: ${cand.length} · nowe: ${Math.min(newLeft,fresh.length)} · fiszek: ${list.length}`;
+  if(cand.length) return S.shuffle?rnd(cand):cand.sort(byDue)[0];
+  if(newLeft>0&&fresh.length) return S.shuffle?rnd(fresh):fresh.sort((a,b)=>weekCmp(a.week,b.week)||a.added-b.added)[0];
   return null;
+}
+function startPractice(){
+  const q=cards.filter(c=>inF(c)&&['LEARNING','REVIEW'].includes(c.p[S.dir].state));
+  if(!q.length){alert('Brak fiszek do ćwiczenia.');return}
+  for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]]}
+  queue=q; practice=true; show();
 }
 
 /* ---------- Rysowanie karty ---------- */
-const stage=document.getElementById('stage');
-const esc=s=>String(s??'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-let flipped=false, cardEl;
+const stage=$('stage');
+let flipped=false, cardEl=null;
 function faces(c){
-  const A=[['Znaczenie',c.meaning],['Synonimy',c.synonyms]];
+  const A=[['Bedeutung',c.meaning],['Synonyme',c.synonyms]];
   const B=[['Ausdruck',c.expression],['Beispiel',c.example]];
   return S.dir==='A'?{front:A,back:B}:{front:B,back:A};
 }
 function renderFace(){
   const f=faces(current)[flipped?'back':'front'];
   cardEl.innerHTML=`<div id="badge"></div>
+    <div class="topic">${esc(weekLabel(current.week))}</div>
+    <button class="del" id="delCard">🗑</button>
     <div class="label">${f[0][0]}</div><div class="main">${esc(f[0][1])}</div>
     <div class="label">${f[1][0]}</div><div class="sub">${esc(f[1][1])}</div>
-    <div class="hint">${flipped?'przesuń: ← nie umiem · → umiem · ↑ łatwe':'dotknij, aby odwrócić'}</div>`;
+    <div class="hint">${flipped?'← nie umiem · → umiem · ↑ łatwe':'dotknij, aby odwrócić'}</div>`;
+  $('delCard').addEventListener('click',e=>{e.stopPropagation();removeCard(current)});
 }
-
-let practice=false, queue=[];
-function startPractice(){
-  const q=cards.filter(c=>(S.week==='all'||String(c.week)===S.week)
-    && ['LEARNING','REVIEW'].includes(c.p[S.dir].state));
-  if(!q.length){alert('Brak fiszek do ćwiczenia.');return}
-  for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]]}
-  queue=q; practice=true; show();
-}
-
 function show(){
   current=practice?(queue.shift()||null):pick();
-  flipped=false;
-  if(practice) document.getElementById('stats').textContent=`ćwiczenie na zapas · zostało: ${queue.length+(current?1:0)}`;
+  flipped=false; cardEl=null;
+  if(practice&&current) $('stats').textContent=`ćwiczenie na zapas · zostało: ${queue.length+1}`;
   if(!current){
     practice=false;
-    const next=cards.filter(c=>S.week==='all'||String(c.week)===S.week)
-      .map(c=>c.p[S.dir]).filter(p=>p.state!=='NEW').map(p=>p.due).sort((a,b)=>a-b)[0];
+    const next=cards.filter(inF).map(c=>c.p[S.dir]).filter(p=>p.state!=='NEW').map(p=>p.due).sort((a,b)=>a-b)[0];
     stage.innerHTML=`<div id="msg">${cards.length?'🎉 Na dziś koniec!':'Brak fiszek. Otwórz ⚙️ i zaimportuj plik Excel.'}
       ${next?`<br>Następna powtórka: ${new Date(next).toLocaleString('pl-PL')}`:''}
       ${cards.length?'<br><button id="more">Ćwicz dalej</button>':''}</div>`;
-    const b=document.getElementById('more'); if(b) b.addEventListener('click',startPractice);
-    pick(); // odświeża statystyki
+    const b=$('more'); if(b) b.addEventListener('click',startPractice);
+    pick();
     return;
   }
   stage.innerHTML='<div id="card"></div>';
-  cardEl=document.getElementById('card');
+  cardEl=$('card');
   renderFace(); attachSwipe();
 }
 
 /* ---------- Gesty ---------- */
 function attachSwipe(){
   let sx,sy,dx=0,dy=0,drag=false;
-  cardEl.addEventListener('pointerdown',e=>{drag=true;sx=e.clientX;sy=e.clientY;dx=dy=0;cardEl.setPointerCapture(e.pointerId);cardEl.style.transition='none'});
+  cardEl.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.del'))return;
+    drag=true;sx=e.clientX;sy=e.clientY;dx=dy=0;cardEl.setPointerCapture(e.pointerId);cardEl.style.transition='none'});
   cardEl.addEventListener('pointermove',e=>{
     if(!drag)return; dx=e.clientX-sx; dy=e.clientY-sy;
     cardEl.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/20}deg)`;
-    const b=document.getElementById('badge'); if(!b)return;
+    const b=$('badge'); if(!b)return;
     const up=dy<-40&&Math.abs(dy)>Math.abs(dx);
+    b.style.left='';b.style.right='';
     if(up){b.textContent='ŁATWE';b.style.color='#0054A6';b.style.left='30%';b.style.opacity=Math.min(1,-dy/120)}
     else if(dx>20){b.textContent='UMIEM';b.style.color='#2e9e5b';b.style.left='20px';b.style.opacity=Math.min(1,dx/120)}
-    else if(dx<-20){b.textContent='NIE UMIEM';b.style.color='#d9534f';b.style.left='';b.style.right='20px';b.style.opacity=Math.min(1,-dx/120)}
+    else if(dx<-20){b.textContent='NIE UMIEM';b.style.color='#d9534f';b.style.right='20px';b.style.opacity=Math.min(1,-dx/120)}
     else b.style.opacity=0;
   });
   cardEl.addEventListener('pointerup',()=>{
     if(!drag)return; drag=false;
-    const moved=Math.hypot(dx,dy);
-    if(moved<8){cardEl.style.transform='';flipped=!flipped;renderFace();return}
+    if(Math.hypot(dx,dy)<8){cardEl.style.transform='';flipped=!flipped;renderFace();return}
     if(dy<-110&&Math.abs(dy)>Math.abs(dx)) return fly('up');
     if(dx>110) return fly('right');
     if(dx<-110) return fly('left');
     cardEl.style.transition='transform .2s';cardEl.style.transform='';
-    const b=document.getElementById('badge'); if(b)b.style.opacity=0;
+    const b=$('badge'); if(b)b.style.opacity=0;
   });
 }
 function fly(dir){
@@ -195,60 +254,148 @@ async function commit(dir){
   if(!current)return;
   const old=current.p[S.dir];
   if(practice){
-    // wariant A: tylko "nie umiem" (lewo) i "łatwe" (góra) zmieniają harmonogram; "umiem" nic nie zmienia
-    if(dir!=='right'){ current.p[S.dir]=answer(old,dir); await putMany([current]); }
+    if(dir!=='right'){current.p[S.dir]=answer(old,dir);await putMany([current])}
   } else {
-    const d=daily();
-    if(old.state==='NEW') d.n++; else d.r++;
-    saveD(d);
+    const d=daily(); if(old.state==='NEW') d.n++; else d.r++; saveD(d);
     current.p[S.dir]=answer(old,dir);
     await putMany([current]);
   }
   show();
 }
 const act=dir=>()=>{if(current&&cardEl)fly(dir)};
-bNo.onclick=act('left'); bOk.onclick=act('right'); bEasy.onclick=act('up');
+$('bNo').addEventListener('click',act('left'));
+$('bOk').addEventListener('click',act('right'));
+$('bEasy').addEventListener('click',act('up'));
+
+/* ---------- Usuwanie ---------- */
+async function removeCard(c){
+  if(!c||!confirm(`Usunąć fiszkę „${c.expression}”?\n(Wróci, jeśli zaimportujesz Excel, w którym jest.)`))return false;
+  await delOne(c.expression);
+  cards=cards.filter(x=>x!==c);
+  queue=queue.filter(x=>x!==c);
+  fillWeeks();
+  if(current===c) show();
+  return true;
+}
 
 /* ---------- Import Excela ---------- */
-file.onchange=async()=>{
-  const f=file.files[0]; if(!f)return;
+$('file').addEventListener('change',async()=>{
+  const f=$('file').files[0]; if(!f)return;
   try{
     const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
     const map=new Map(cards.map(c=>[c.expression,c]));
-    let added=0,updated=0,out=[];
+    let added=0,updated=0; const out=[];
     rows.slice(1).forEach((r,i)=>{
       const expression=String(r[1]).trim(); if(!expression)return;
       const old=map.get(expression);
-      const c={expression,week:Number(r[0])||0,meaning:String(r[2]).trim(),
+      const c={expression,week:String(r[0]).trim(),meaning:String(r[2]).trim(),
         synonyms:String(r[3]).trim(),example:String(r[4]).trim(),
-        p:old?old.p:{A:newP(),B:newP()}, added:old?old.added:Date.now()+i};
+        p:old?old.p:{A:newP(),B:newP()},added:old?old.added:Date.now()+i};
       old?updated++:added++; map.set(expression,c); out.push(c);
     });
     await putMany(out);
     cards=[...map.values()];
-    impMsg.textContent=`Dodano: ${added}, zaktualizowano: ${updated}.`;
+    $('impMsg').textContent=`Dodano: ${added}, zaktualizowano: ${updated}.`;
     fillWeeks(); show();
-  }catch(e){impMsg.textContent='Błąd importu: '+e.message}
-  file.value='';
-};
-bImport.onclick=()=>file.click();
+  }catch(e){$('impMsg').textContent='Błąd importu: '+e.message}
+  $('file').value='';
+});
+$('bImport').addEventListener('click',()=>$('file').click());
+
+/* ---------- Kopia zapasowa ---------- */
+$('bExp').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({app:'fiszki',version:1,exported:new Date().toISOString(),cards})],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`fiszki-kopia-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+$('bImpB').addEventListener('click',()=>$('fileB').click());
+$('fileB').addEventListener('change',async()=>{
+  const f=$('fileB').files[0]; if(!f)return;
+  try{
+    const data=JSON.parse(await f.text());
+    const list=(data.cards||[]).filter(c=>c&&c.expression&&c.p&&c.p.A&&c.p.B);
+    if(!list.length) throw new Error('plik nie zawiera fiszek');
+    if(!confirm(`Wczytać ${list.length} fiszek z kopii? Fiszki o tych samych zwrotach zostaną zastąpione wersją z kopii (razem z postępami).`))return;
+    list.forEach(c=>c.week=String(c.week??''));
+    await putMany(list);
+    const map=new Map(cards.map(c=>[c.expression,c]));
+    list.forEach(c=>map.set(c.expression,c));
+    cards=[...map.values()];
+    $('impMsg').textContent=`Wczytano z kopii: ${list.length} fiszek.`;
+    fillWeeks(); show();
+  }catch(e){$('impMsg').textContent='Błąd kopii: '+e.message}
+  $('fileB').value='';
+});
 
 /* ---------- Ustawienia UI ---------- */
+const allWeeks=()=>[...new Set(cards.map(c=>c.week))].sort(weekCmp);
 function fillWeeks(){
-  const w=[...new Set(cards.map(c=>c.week))].sort((a,b)=>a-b);
-  sWeek.innerHTML='<option value="all">Wszystkie</option>'+w.map(x=>`<option value="${x}">#${x}</option>`).join('');
-  sWeek.value=w.map(String).includes(S.week)?S.week:'all'; S.week=sWeek.value;
+  const w=allWeeks();
+  S.weeks=S.weeks.filter(x=>w.includes(x)); saveS();
+  $('sWeeks').innerHTML=w.map(x=>`<label><input type="checkbox" value="${esc(x)}" ${S.weeks.includes(x)?'checked':''}>${esc(weekLabel(x))}</label>`).join('')||'<span class="small">brak fiszek</span>';
+  $('lstW').innerHTML='<option value="all">Wszystkie tematy</option>'+w.map(x=>`<option value="${esc(x)}">${esc(weekLabel(x))}</option>`).join('');
 }
-openSet.onclick=()=>{sDir.value=S.dir;sNew.value=S.maxNew;sRev.value=S.maxRev;dlg.showModal()};
-bClose.onclick=()=>{
-  S.dir=sDir.value;S.week=sWeek.value;S.maxNew=+sNew.value||0;S.maxRev=+sRev.value||0;
-  saveS();dlg.close();show();
-};
+$('bAllWeeks').addEventListener('click',()=>$('sWeeks').querySelectorAll('input').forEach(i=>i.checked=false));
+$('openSet').addEventListener('click',()=>{
+  fillWeeks();
+  $('sDir').value=S.dir;$('sShuffle').checked=S.shuffle;$('sNew').value=S.maxNew;$('sRev').value=S.maxRev;
+  $('impMsg').textContent='';$('dlg').showModal();
+});
+$('bClose').addEventListener('click',()=>{
+  S.dir=$('sDir').value; S.shuffle=$('sShuffle').checked;
+  S.weeks=[...$('sWeeks').querySelectorAll('input:checked')].map(i=>i.value);
+  S.maxNew=+$('sNew').value||0; S.maxRev=+$('sRev').value||0;
+  saveS(); $('dlg').close(); practice=false; queue=[]; show();
+});
+
+/* ---------- Lista i edycja ---------- */
+let listItems=[], editing=null;
+function renderList(){
+  const q=$('lstQ').value.trim().toLowerCase(), w=$('lstW').value;
+  listItems=cards.filter(c=>(w==='all'||c.week===w)&&
+      (!q||[c.expression,c.meaning,c.synonyms,c.example].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>a.expression.localeCompare(b.expression,'de'));
+  $('lstCount').textContent=`${listItems.length} fiszek`;
+  $('lstItems').innerHTML=listItems.map((c,i)=>`<div class="item" data-i="${i}">
+    <b>${esc(c.expression)}</b>
+    <span>${esc(weekLabel(c.week))} · A: ${ST[c.p.A.state]} · B: ${ST[c.p.B.state]}</span></div>`).join('');
+}
+$('openList').addEventListener('click',()=>{fillWeeks();$('lstQ').value='';renderList();$('lst').showModal()});
+$('lstQ').addEventListener('input',renderList);
+$('lstW').addEventListener('change',renderList);
+$('lstClose').addEventListener('click',()=>{
+  $('lst').close();
+  if(current&&cards.includes(current)&&cardEl) renderFace(); else show();
+});
+$('lstItems').addEventListener('click',e=>{
+  const el=e.target.closest('.item'); if(!el)return;
+  editing=listItems[+el.dataset.i];
+  $('eTitle').textContent=editing.expression;
+  $('eWeek').value=editing.week; $('eMeaning').value=editing.meaning;
+  $('eSyn').value=editing.synonyms; $('eEx').value=editing.example;
+  $('ed').showModal();
+});
+$('eSave').addEventListener('click',async()=>{
+  if(!editing)return;
+  editing.week=$('eWeek').value.trim(); editing.meaning=$('eMeaning').value.trim();
+  editing.synonyms=$('eSyn').value.trim(); editing.example=$('eEx').value.trim();
+  await putMany([editing]);
+  $('ed').close(); fillWeeks(); renderList();
+});
+$('eDel').addEventListener('click',async()=>{
+  if(await removeCard(editing)){$('ed').close();renderList()}
+});
+$('eCancel').addEventListener('click',()=>$('ed').close());
 
 /* ---------- Start ---------- */
 (async()=>{
-  db=await openDB(); cards=await getAll(); fillWeeks(); show();
+  db=await openDB(); cards=await getAll();
+  cards.forEach(c=>c.week=String(c.week??''));
+  fillWeeks(); show();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   if(navigator.storage&&navigator.storage.persist) navigator.storage.persist();
 })();
